@@ -1,28 +1,26 @@
-FROM nginx:latest
-MAINTAINER ifeng <https://t.me/HiaiFeng>
-EXPOSE 80
-USER root
+FROM alpine:3.14
+ENV TIME_ZONE Asia/Shanghai
+RUN apk add curl ca-certificates tar nginx supervisor unzip
 
-RUN apt-get update && apt-get install -y supervisor wget unzip
+RUN mkdir -p /usr/local/xray && cd /usr/local/xray &&  curl -LO https://github.com/XTLS/Xray-core/releases/download/v1.7.2/Xray-linux-64.zip  && unzip Xray-linux-64.zip && rm -rf Xray-linux-64.zip
 
-# 定义 UUID 及 伪装路径,请自行修改.(注意:伪装路径以 / 符号开始,为避免不必要的麻烦,请不要使用特殊符号.)
+COPY nginx.conf /etc/nginx/nginx.conf.tmp
+COPY supervisord.conf /etc/supervisord.conf
+COPY config.json /etc/xray/config.json.tmp
+
+
+RUN mkdir -p /usr/share/nginx/html
+
+COPY html7.zip /usr/share/nginx/html/html7.zip
+
+RUN cd /usr/share/nginx/html/ && unzip html7.zip && rm -rf html7.zip
+
+
 ENV UUID de04add9-5c68-8bab-950c-08cd5320df18
-ENV VMESS_WSPATH /vmess
-ENV VLESS_WSPATH /vless
+ENV PX /PX
 
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY nginx.conf /etc/nginx/nginx.conf
+ADD run.sh /
 
-RUN mkdir /etc/v2ray /usr/local/v2ray
-COPY config.json /etc/v2ray/
-COPY entrypoint.sh /usr/local/v2ray/
+EXPOSE 80
 
-# 感谢 fscarmen 大佬提供 Dockerfile 层优化方案
-RUN wget -q -O /tmp/v2ray-linux-64.zip https://github.com/v2fly/v2ray-core/releases/download/v4.45.0/v2ray-linux-64.zip && \
-    unzip -d /usr/local/v2ray /tmp/v2ray-linux-64.zip v2ray v2ctl && \
-    wget -q -O /usr/local/v2ray/geosite.dat https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat && \
-    wget -q -O /usr/local/v2ray/geoip.dat https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat && \
-    chmod a+x /usr/local/v2ray/entrypoint.sh
-
-ENTRYPOINT [ "/usr/local/v2ray/entrypoint.sh" ]
-CMD ["/usr/bin/supervisord"]
+CMD sh run.sh
