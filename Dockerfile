@@ -1,6 +1,6 @@
 FROM alpine:3.14
 ENV TIME_ZONE Asia/Shanghai
-RUN apk add curl ca-certificates tar nginx supervisor unzip
+RUN apk add curl ca-certificates tar nginx supervisor unzip bash
 
 RUN mkdir -p /usr/local/xray && cd /usr/local/xray &&  curl -LO https://github.com/XTLS/Xray-core/releases/download/v1.7.2/Xray-linux-64.zip  && unzip Xray-linux-64.zip && rm -rf Xray-linux-64.zip
 
